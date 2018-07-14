@@ -1,0 +1,27 @@
+name: Content Edit
+version: 0.1.0
+description: Frountend edit of content pages by users in groups
+icon: pen-fancy
+author:
+  name: Richard N Hainsworth
+  email: rnhainsworth@gmail.com
+homepage: https://github.com/finanalyst/grav-plugin-content-edit
+demo: http://demo.yoursite.com
+keywords: grav, plugin, content, edit
+bugs: https://github.com/finanalyst/grav-plugin-content-edit/issues
+docs: https://github.com/finanalyst/grav-plugin-content-edit/blob/develop/README.md
+license: MIT
+
+form:
+  validation: strict
+  fields:
+    enabled:
+      type: toggle
+      label: Plugin status
+      highlight: 1
+      default: 0
+      options:
+        1: Enabled
+        0: Disabled
+      validate:
+        type: bool
