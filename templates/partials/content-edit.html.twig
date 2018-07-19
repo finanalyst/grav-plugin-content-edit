@@ -1,5 +1,178 @@
-{% extends 'partials/base.html.twig' %}
+{% macro ce_loop(base, clctn, prev) %}
+    {% for p in clctn %}
+        {% if not (p.template == 'content-edit') %}
+            {% set review = not (p.modular or p.header.contentEdit.nopreview) %}
+            <li><div class="ce_div">
+              {{ p.title }}
+              {% if not p.header.contentEdit.noedit %}
+                    &nbsp;<button onclick="ce_edit_md( '{{ p.route }}' , {{ review ? 'true' : 'false' }} )"  style="color: red;">EDIT</button>
+               {% endif %}
+               {% if  review %}
+                    {% if prev %}
+                        &nbsp;<span  style="color: #aa1292;">Can Preview</span>
+                    {% endif %}
+                    &nbsp;<a href="{{ base ~ p.route }}" style="color: blue;" target="_blank">GOTO<sup><i class="fa fa-external-link"></i></sup></a>
+               {% endif %}
+           </div>
+           {% if p.children.count > 0 %}
+                <ul>{{ _self.ce_loop( base, p.children, prev ) }}</ul>
+           {% endif %}
+       </li>
+       {% endif %}
+    {% endfor %}
+{% endmacro %}
 
-{% block content %}
-   {% include 'partials/content-edit.html.twig' %}
-{% endblock %}
+{% set iOn = config.plugins['content-edit']['iframePreview'] %}
+{% set dOn = config.plugins['content-edit']['idivPreview'] %}
+{% set prev =  iOn or dOn %}
+
+<ul class="tree">
+    {{  _self.ce_loop( base_url_absolute, page.collection, prev  ) }}
+</ul>
+<div class="ce_section">
+    <div class="ce_div">
+        <button id="ce_save_btn" disabled>
+            Save&nbsp;<i class="fa fa-download fa-lg"></i>
+        </button>
+        {% if prev %}
+            &nbsp;<button id="ce_preview_btn" disabled>Preview&nbsp;<i class="fa fa-eye fa-lg"></i></button>
+            <button id="ce_edit_btn" style="display: none;">Edit&nbsp;<i class="fa fa-pencil-square-o fa-lg"></i></button>
+        {% endif %}
+        &nbsp;<span id="ce_saving_msg" style="color: blue; display: none;">Saving Content</span>
+        <span id="ce_fail_msg" style="color: red; display: none;">Save Failure</span>
+        <span id="ce_ok_msg" style="color: green; display: none;">Edits Saved</span>
+        <span id="ce_notsaved_msg" style="color: red; display: none">Unsaved Changes</span>
+    </div>
+    <div id="ce_editor_container" class="simplemde">
+        <textarea id="ce_md_container">No md content</textarea>
+    </div>
+    {% if iOn %}<iframe id="ce_content_frame" class="ce_content_styling"></iframe>{% endif %}
+    {% if dOn %}<div id="ce_content_div" class="ce_content_styling"></div>{% endif %}
+</div>
+
+<script>
+var simplemde;
+var route;
+var taint=false;
+
+$().ready(function() {
+    {% if prev %}
+        $('#ce_preview_btn').click( function ( ) {
+            $(this).css('display','none');
+            $('#ce_edit_btn').css('display','inherit');
+            $('#ce_editor_container').css('display','none');
+            {% if iOn %}$('#ce_content_frame').attr('src', '{{ base_url_absolute }}' + route ).css('display', 'inherit' );{% endif %}
+            {% if dOn %}
+            var data = {
+                ce_data_post: true,
+                action: 'cePreviewContent',
+                page: route
+            };
+            $.ajax({
+                type: "POST",
+                url: '{{ base_url_absolute ~ page.route }}',
+                data: data,
+                success: function(response)
+                {
+                    $('#ce_content_div').html(response).css('display', 'inherit' );
+                }
+            });
+            {% endif %}
+        });
+        $('#ce_edit_btn').click( function() {
+            $(this).css('display','none');
+            $('#ce_editor_container').css('display','inherit');
+            $('#ce_preview_btn').css('display','inherit');
+            {% if iOn %}$('#ce_content_frame').css('display', 'none' );{% endif %}
+            {% if dOn %}$('#ce_content_div').css('display', 'none' );{% endif %}
+        });
+    {% endif %}
+    simplemde = new SimpleMDE({
+        element: $('#ce_md_container')[0],
+        spellChecker: false,
+        toolbar: [
+            "bold", "italic", "heading", "|",
+            "quote", "unordered-list", "ordered-list", "|",
+            {
+                name: "linkCustom",
+                action: function (editor) {
+                    simplemde.codemirror.replaceSelection("[]()");
+                    $("input[id='upload_file']").click();
+                },
+                className: "fa fa-link",
+                title: "Upload File / Insert Link"
+            },
+            {
+                name: "imageCustom",
+                action: function (editor){
+                    simplemde.codemirror.replaceSelection("![]()");
+                    $("input[id='upload_image']").click();
+                },
+                className: "fa fa-picture-o",
+                title: "Upload Image / Insert Link"
+            },
+            "table", "|", "undo", "redo"
+        ],
+        forceSync: false,
+        status: false
+    });
+    simplemde.codemirror.on("change", function(){
+        if (! taint ) { taint = true; return; }
+    	$('#ce_notsaved_msg').css('display','inherit');
+        $('#ce_ok_msg').css('display','none');
+        $('#ce_fail_msg').css('display','none');
+    	$('#ce_saving_msg').css('display','none');
+        $('#ce_save_btn').prop('disabled', false);
+    });
+    $('#ce_save_btn').click(function ( ) {
+        $('#ce_saving_msg').css('display', 'inherit');
+        var data = {
+            ce_data_post: true,
+            action: 'ceSaveContent',
+            page: route,
+            content: simplemde.value()
+        };
+        $.ajax({
+            type: "POST",
+            url: '{{ base_url_absolute ~ page.route }}',
+            data: data,
+            success: function(response)
+            {
+                if (response.toLowerCase() === 'ok') {
+                    $('#ce_saving_msg').css('display', 'none');
+                    $('#ce_ok_msg').css('display', 'inherit');
+                    $('#ce_notsaved_msg').css('display','none');
+                    $('#ce_save_btn').prop('disabled', true);
+                } else {
+                    $('#ce_saving_msg').css('display', 'none');
+                    $('#ce_fail_msg').css('display', 'inherit');
+                }
+            }
+        });
+    });
+});
+
+function ce_edit_md( p_route, review ) {
+    var data = {
+        ce_data_post: true,
+        action: 'ceTransferContent',
+        page: p_route
+    };
+    route = p_route;
+    $('#ce_notsaved_msg').css('display','none');
+    $('#ce_ok_msg').css('display','none');
+    $('#ce_fail_msg').css('display','none');
+    $('#ce_saving_msg').css('display','none');
+    {% if prev %}$('#ce_preview_btn').prop('disabled', ! review);{% endif %}
+    $.ajax({
+        type: "POST",
+        url: '{{ base_url_absolute ~ page.route }}',
+        data: data,
+        success: function(response)
+        {
+            taint = false;
+            simplemde.value(response);
+        }
+    });
+}
+</script>

@@ -1,14 +1,5 @@
-{% macro ce_loop(clctn) %}
-    {% for p in clctn %}
-       <li>{{ p.title }}
-       {% if p.children.count > 0 %}<span style="color: red">YES</span>
-       <ul>{{ _self.ce_loop( p.children ) }}</ul>
-       {% endif %}
-       <a href="{{ p.route }}" target="_blank">EDIT</a>
-       </li>
-    {% endfor %}
-{% endmacro %}
+{% extends 'partials/base.html.twig' %}
 
-<ul class="tree">
-    {{  _self.ce_loop( page.collection ) }}
-</ul>
+{% block content %}
+   {% include 'partials/content-edit.html.twig' %}
+{% endblock %}

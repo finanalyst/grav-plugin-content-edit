@@ -1,13 +1,12 @@
 name: Content Edit
 version: 0.1.0
-description: Frountend edit of content pages by users in groups
-icon: pen-fancy
+description: Frontend edit of content pages by users in groups
+icon: pencil-square-o
 author:
   name: Richard N Hainsworth
   email: rnhainsworth@gmail.com
 homepage: https://github.com/finanalyst/grav-plugin-content-edit
-demo: http://demo.yoursite.com
-keywords: grav, plugin, content, edit
+keywords: grav, plugin, content, edit, frontend
 bugs: https://github.com/finanalyst/grav-plugin-content-edit/issues
 docs: https://github.com/finanalyst/grav-plugin-content-edit/blob/develop/README.md
 license: MIT
@@ -19,6 +18,28 @@ form:
       type: toggle
       label: Plugin status
       highlight: 1
+      default: 0
+      options:
+        1: Enabled
+        0: Disabled
+      validate:
+        type: bool
+    iframePreview:
+      type: toggle
+      label: 'iFrame Preview window'
+      help: 'Some server/browser configurations generate an X-Header error'
+      highlight: 1
+      default: 1
+      options:
+        1: Enabled
+        0: Disabled
+      validate:
+        type: bool
+    divPreview:
+      type: toggle
+      label: div Preview.
+      help: 'An approximation of the page. Review quality depends on the template and complexity of the page.'
+      highlight: 0
       default: 0
       options:
         1: Enabled
