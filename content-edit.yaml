@@ -1,3 +1,4 @@
 enabled: true
 iframePreview: true
 divPreview: true
+editReport: 0

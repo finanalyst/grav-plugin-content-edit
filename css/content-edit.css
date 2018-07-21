@@ -1,21 +1,122 @@
 .ce_div {
-    display: inline-flex;
-    align-items: center;
-}
-.ce_div span {
+  display: inline-flex;
+  align-items: center; }
+  .ce_div span {
     padding: 4px;
     border-radius: 5px;
-    box-shadow: 0 4px 4px 0 rgb(0,0,0,0.2), 0 4px 20px 0 rgba(0,0,0,0.19);
-}
+    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.2), 0 4px 20px 0 rgba(0, 0, 0, 0.19); }
+
 .ce_content_styling {
-    border: burlywood solid 2px;
-    border-radius: 10px;
-    padding: 5px;
-    width: 100%;
-    height: 90vh;
-    overflow: auto;
-    display: none;
-}
+  border: burlywood solid 2px;
+  border-radius: 10px;
+  padding: 5px;
+  width: 100%;
+  height: 90vh;
+  overflow: auto;
+  display: none; }
+
 .CodeMirror {
-    height: 90vh;
-}
+  height: 90vh; }
+
+.ce_data_report button {
+  border-radius: 5px;
+  margin-left: 10px;
+  padding: 4px; }
+  .ce_data_report button:hover {
+    padding: 2px;
+    border: 2px solid #907a3a; }
+  .ce_data_report button#ce_open_all {
+    background-color: rgba(106, 231, 103, 0.3); }
+  .ce_data_report button#ce_close_all {
+    background-color: rgba(252, 143, 143, 0.5); }
+
+.ce_data_report .ce_data_line {
+  margin-top: 10px; }
+  .ce_data_report .ce_data_line .ce_user {
+    color: blue; }
+    .ce_data_report .ce_data_line .ce_user strong {
+      color: black; }
+  .ce_data_report .ce_data_line .ce_date {
+    color: red; }
+    .ce_data_report .ce_data_line .ce_date strong {
+      color: black; }
+  .ce_data_report .ce_data_line .ce_route {
+    color: green; }
+    .ce_data_report .ce_data_line .ce_route strong {
+      color: black; }
+
+.ce_data_report .Differences {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  empty-cells: show; }
+  .ce_data_report .Differences ins, .ce_data_report .Differences del {
+    text-decoration: none; }
+  .ce_data_report .Differences thead th {
+    text-align: left;
+    border-bottom: 1px solid #000;
+    background: #aaa;
+    color: #000;
+    padding: 4px;
+    flex: 1; }
+  .ce_data_report .Differences tbody th {
+    text-align: right;
+    background: #ccc;
+    width: 4em;
+    padding: 1px 2px;
+    border-right: 1px solid #000;
+    vertical-align: top;
+    font-size: 13px;
+    flex: 1; }
+  .ce_data_report .Differences td {
+    padding: 1px 2px;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    flex: 1; }
+  .ce_data_report .Differences .Skipped {
+    background: #f7f7f7; }
+
+.ce_data_report .DifferencesSideBySide tbody th:nth-child(2), .ce_data_report .DifferencesSideBySide tbody td:nth-child(2), .ce_data_report .DifferencesSideBySide tbody th:nth-child(4), .ce_data_report .DifferencesSideBySide tbody td:nth-child(4) {
+  flex: 10; }
+
+.ce_data_report .DifferencesSideBySide .ChangeInsert td.Left {
+  background: #dfd; }
+
+.ce_data_report .DifferencesSideBySide .ChangeInsert td.Right {
+  background: #cfc; }
+
+.ce_data_report .DifferencesSideBySide .ChangeDelete td.Left {
+  background: #f88; }
+
+.ce_data_report .DifferencesSideBySide .ChangeDelete td.Right {
+  background: #faa; }
+
+.ce_data_report .DifferencesSideBySide .ChangeReplace .Left {
+  background: #fe9; }
+
+.ce_data_report .DifferencesSideBySide .ChangeReplace .Right {
+  background: #fd8; }
+
+.ce_data_report .DifferencesSideBySide .ChangeReplace ins, .ce_data_report .DifferencesSideBySide .ChangeReplace del {
+  background: #fc0; }
+
+.ce_data_report .DifferencesInline th:nth-child(3), .ce_data_report .DifferencesInline td:nth-child(3) {
+  flex: 20; }
+
+.ce_data_report .DifferencesInline .ChangeDelete .Left {
+  background: #fdd; }
+
+.ce_data_report .DifferencesInline .ChangeInsert .Right {
+  background: #dfd; }
+
+.ce_data_report .DifferencesInline .ChangeReplace .Right {
+  background: #dfd; }
+
+.ce_data_report .DifferencesInline .ChangeReplace .Left {
+  background: #fdd; }
+
+.ce_data_report .DifferencesInline .ChangeReplace ins {
+  background: #9e9; }
+
+.ce_data_report .DifferencesInline .ChangeReplace del {
+  background: #e99; }

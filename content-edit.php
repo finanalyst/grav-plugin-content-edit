@@ -5,9 +5,8 @@ use Grav\Common\Plugin;
 use RocketTheme\Toolbox\Event\Event;
 use Grav\Common\Markdown\Parsedown;
 use Grav\Common\Markdown\ParsedownExtra;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Formatter\LineFormatter;
+use RocketTheme\Toolbox\File\File;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ContentEditPlugin
@@ -15,7 +14,7 @@ use Monolog\Formatter\LineFormatter;
  */
 class ContentEditPlugin extends Plugin
 {
-    protected $logger;
+    protected $logfile;
     protected $renderer;
 
     public static function getSubscribedEvents()
@@ -29,6 +28,9 @@ class ContentEditPlugin extends Plugin
     {
         // Don't proceed if we are in the admin plugin
         if ($this->isAdmin()) {
+            $this->enable( [
+                'onAdminTwigTemplatePaths' => ['onAdminTwigTemplatePaths', 0]
+            ]);
             return;
         }
 
@@ -37,15 +39,26 @@ class ContentEditPlugin extends Plugin
             'onPagesInitialized' => ['onPagesInitialized', 0 ],
             'onTwigTemplatePaths' => ['onTwigTemplatePaths',0]
         ]);
-        $this->logger = new Logger('content-edit');
-        $stream = new StreamHandler( DATA_DIR .'content-edit/editing.edlog', Logger::DEBUG);
-        $stream->setFormatter(new LineFormatter("[%datetime%] %message% %context%\n"));
-        $this->logger->pushHandler($stream);
+        $path = DATA_DIR . 'content-edit' . DS . 'editing_' . date('Y-m-d') . '.yaml';
+        $this->logfile = File::instance($path);
         require_once __DIR__ . '/embedded/php-diff-master/lib/Diff.php';
-        //require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Text/Unified.php';
-        //$this->renderer = new \Diff_Renderer_Text_Unified;
-        require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Html/SideBySide.php';
-        $this->renderer = new \Diff_Renderer_Html_SideBySide;
+        switch ( $this->config->get('plugins.content-edit.editReport') ) {
+            case 0:
+                require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Html/SideBySide.php';
+                $this->renderer = new \Diff_Renderer_Html_SideBySide;
+                break;
+            case 1:
+                require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Html/Inline.php';
+                $this->renderer = new \Diff_Renderer_Html_Inline;
+                break;
+            case 2:
+                require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Text/Unified.php';
+                $this->renderer = new \Diff_Renderer_Text_Unified;
+                break;
+            default:
+                require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Text/Context.php';
+                $this->renderer = new \Diff_Renderer_Text_Context;
+        }
     }
 
     public function onTwigTemplatePaths()
@@ -56,6 +69,14 @@ class ContentEditPlugin extends Plugin
         $assets->addCss('//cdn.jsdelivr.net/simplemde/latest/simplemde.min.css', 1);
         $assets->addJs('//cdn.jsdelivr.net/simplemde/latest/simplemde.min.js', 1);
 
+        $assets->addCss('plugin://content-edit/css/content-edit.css', 2);
+        $assets->addJs('plugin://content-edit/embedded/simpleUpload.min.js',0);
+    }
+
+    public function onAdminTwigTemplatePaths($event)
+    {
+        $event['paths'] = [__DIR__ . '/templates'];
+        $assets = $this->grav['assets'];
         $assets->addCss('plugin://content-edit/css/content-edit.css');
     }
 
@@ -91,6 +112,7 @@ class ContentEditPlugin extends Plugin
                 $output = $this->processMarkdown($post, $page);
                 break;
             case 'ceFileUpload': // Handle a file (or image) upload
+            $this->grav['dd']->dump($post);
                 $output = $this->saveFile($post, $page);
                 break;
             default:
@@ -100,6 +122,11 @@ class ContentEditPlugin extends Plugin
         echo json_encode($output);
         exit;
     }
+
+    public function saveFile($params, $post) {
+            return 'stuffgggg';
+    }
+
     /**
      * Process the Markdown content. Uses Parsedown or Parsedown Extra depending on configuration
      * Taken from Grav/Common/Page/Page.php and modified to process a supplied page
@@ -151,7 +178,8 @@ class ContentEditPlugin extends Plugin
         // Initialize the diff class
         $diff = new \Diff(explode("\n", $old), explode("\n",$new), $options);
         $rendered=$diff->render($this->renderer) ;
-        $this->logger->info($this->grav['user']->username , [ 'route' => $params['page'], 'diff' => $rendered ]);
+        $record = [ 'date' => date('D d H:i:s'), 'user' => $this->grav['user']->username , 'route' => $params['page'], 'diff' => $rendered ];
+        $this->logfile->save($this->logfile->content() . Yaml::dump( [ $record ] ) );
         return 'ok';
     }
 

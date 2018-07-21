@@ -24,6 +24,8 @@ You should now have all the plugin files under `/your/site/grav/user/plugins/con
 
 > NOTE: This plugin is a modular component for Grav which requires [Grav](http://github.com/getgrav/grav) and the [Error](https://github.com/getgrav/grav-plugin-error) and [Problems](https://github.com/getgrav/grav-plugin-problems) to operate, and [Login](https://github.com/getgrav/grav-plugin-login).
 
+> RECOMMENDATION: This plugin has been designed to be used in combination with the Admin and DataManager plugins.
+
 ### Admin Plugin
 
 If you use the admin plugin, you can install directly through the admin plugin by browsing the `Plugins` tab and clicking on the `Add` button.
@@ -38,17 +40,27 @@ Here is the default configuration and an explanation of available options:
 enabled: true
 iframePreview: true
 divPreview: false
+editReport: 0
 ```
 
 - `iframePreview` turns on a review window in an iframe. It seems that some server/browser combinations generate an error when embedding a page in an iframe (due to a hacking vulnerability).
 - `divPreview` turns on review window in a div. Currently this is only an approximation of the html (maybe a better way will be discovered).
 - Some people find a preview window on the same page as the **md** editor to be distracting. All on-page review is turned off by disabling both `iframePreview` and `divPreview`.
+- `editReport` selects the renderer for differences between original and edited versions of pages.
+
+All these options can be set in the Admin page.
 
 Note that if you use the admin plugin, a file with your configuration, and named content-edit.yaml will be saved in the `user/config/plugins/` folder once the configuration is saved in the admin.
 
 ## Usage
 
 A special page is created to be rendered by the `content-edit` template. Within the header of the page a **page collection** is created. The contents of this collection, or more precisely, the `routes` to files with `.md` content,  is then displayed as a tree with a button for editing, and - if the route will generate html that can be reviewed - a label indicating whether the page can be reviewed on-page and an anchor to open the page in another browser tab.
+
+For example:
+
+![](scrn_content_edit_open.png)
+
+The screenshot show the tree of pages, which pages can be edited, and which can be previewed (generate a valid page). Edting and Previewing can be turned off on a page by page basis.
 
 ### Security
 
@@ -90,7 +102,7 @@ For example, if we create a user called **peter** and under `user/accounts/peter
 
 ```yaml
 email: peter@somecorporate.com
-fullname: Peter Piper
+fullname: PP
 title: tester
 language: en
 groups:
@@ -140,12 +152,25 @@ However, each of separate page within a modular page may contain *md* content th
 
 All previews can be turned off by disabling `iframePreview` and `divPreview` in the plugin configuration file.
 
+## Monitoring Editing
+All changes to pages are logged in a diff format in `user/data/content-edit/` in a file that has the month in the filename.
+
+If **Admin Plugin** and [DataManagerPlugin](https://github.com/getgrav/grav-plugin-data-manager) are installed, then `content-edit` provides a template for viewing the editing by someone with `admin` priviledges.
+
+The [php-diff library](https://github.com/chrisboulton/php-diff) provides for two html and two text styles for rendering differences between edited and unedited files. These can be selected in the plugin options.
+
+> Note: the difference rendering is at the time of saving, so different styles will be saved in the log file.
+
+Here is an example of the types of rendering:
+![](scrn_content_edit_datamanager_view.png)
+
 ## Credits
 
-1. GRAV and LOGIN, of course.
+1. GRAV, LOGIN, DataManager developers, of course.
 1. Credit is due to [SimpleMDE](https://http://simplemde.com) for its embeddable *md* editor.
 1. A great deal of this plugin is inspired by, and chunks just copied from, the  [editable-simplemde](https://github.com/bleutzinn/grav-plugin-editable-simplemde) plugin for GRAV. A very innovative plugin!
-1. The [php-diff library](https://github.com/chrisboulton/php-diff) by Chris Boulton.
+1. For the [php-diff library](https://github.com/chrisboulton/php-diff) by Chris Boulton.
+1. For the [simple Upload function](http://simpleupload.michaelcbrook.com/) by Michael Brook.
 
 ## To Do
 

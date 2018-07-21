@@ -46,3 +46,14 @@ form:
         0: Disabled
       validate:
         type: bool
+    editReport:
+        type: select
+        label: 'Edit Report'
+        help: 'How edit difference is rendered when stored, and shown via DataManager in Admin Panel.'
+        highlight: 0
+        default: 0
+        options:
+            0: HTML Side by Side
+            1: HTML Inline
+            2: Text Unified
+            3: Text Context

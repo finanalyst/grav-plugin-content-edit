@@ -1,0 +1,33 @@
+{% set data = grav.twig.itemData %}
+<div class="ce_data_report">
+    <button id="ce_open_all">Open All</button>
+    <button id="ce_close_all">Close All</button>
+    {% for item in data %}
+        <div class="ce_data_line">
+           <input type="checkbox" class="ce_toggle" data-index="{{loop.index}}" />
+            <span class="ce_date"><strong>Date: </strong>{{item.date}}</span><span class="ce_user"> <strong> Edited by: </strong>{{item.user}}</span> <span class="ce_route"><strong> Route: </strong> {{ item.route }}</span>
+        </div>
+        <div id="ce_item{{ loop.index }}"  style="display: none;" class="ce_data_diff">
+            {{ item.diff|raw }}
+        </div>
+    {% endfor %}
+</div>
+<script>
+    $().ready(function(){
+        $('.ce_toggle').click(function() {
+            $('#ce_item' + $(this).attr('data-index')).css('display',$(this).prop('checked')? 'inherit':'none');
+        });
+        $('#ce_open_all').click(function() {
+            $('.ce_toggle').each(function(){
+                $(this).prop('checked',true);
+                $('#ce_item' + $(this).attr('data-index')).css('display','inherit');
+            });
+        });
+        $('#ce_close_all').click(function() {
+            $('.ce_toggle').each(function(){
+                $(this).prop('checked',false);
+                $('#ce_item' + $(this).attr('data-index')).css('display','none');
+            });
+        });
+    });
+</script>

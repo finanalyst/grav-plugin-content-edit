@@ -25,12 +25,16 @@
 {% set iOn = config.plugins['content-edit']['iframePreview'] %}
 {% set dOn = config.plugins['content-edit']['idivPreview'] %}
 {% set prev =  iOn or dOn %}
+{% set imgExts = 'jpg,jpeg,png,gif,svg' %}
+{% set imgTypes = 'image/gif,image/x-gif,image/jpeg,image/pjpeg,image/png,image/x-png,image/svg+xml' %}
+{% set fileExts = 'css,doc,docx,gif,jpg,jpeg,png,mp3,mp4,pdf,ppt,pptx,svg,txt,xls,xlsx,zip' %}
+{% set fileTypes = 'application/msword,application/pdf,application/x-pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/zip,text/css,text/plain,audio/mp3,video/mpeg,video/mp4,' ~ imgTypes %}
 
 <ul class="tree">
     {{  _self.ce_loop( base_url_absolute, page.collection, prev  ) }}
 </ul>
 <div class="ce_section">
-    <div class="ce_div">
+    <div class="ce_div" >
         <button id="ce_save_btn" disabled>
             Save&nbsp;<i class="fa fa-download fa-lg"></i>
         </button>
@@ -43,11 +47,14 @@
         <span id="ce_ok_msg" style="color: green; display: none;">Edits Saved</span>
         <span id="ce_notsaved_msg" style="color: red; display: none">Unsaved Changes</span>
     </div>
-    <div id="ce_editor_container" class="simplemde">
-        <textarea id="ce_md_container">No md content</textarea>
+    <div id="ce_editor_container" class="simplemde" style="display: none;">
+        <textarea id="ce_md_container"></textarea>
     </div>
-    {% if iOn %}<iframe id="ce_content_frame" class="ce_content_styling"></iframe>{% endif %}
-    {% if dOn %}<div id="ce_content_div" class="ce_content_styling"></div>{% endif %}
+    <div id="ce_no_route" >Select a page to edit</div>
+    {% if iOn %}<iframe id="ce_content_frame" class="ce_content_styling" style="display: none;"></iframe>{% endif %}
+    {% if dOn %}<div id="ce_content_div" class="ce_content_styling"  style="display: none;"></div>{% endif %}
+    <input type="file" id="ce_upload_image" accept="{{ imgTypes }}" style="display: none;" />
+    <input type="file" id="ce_upload_file" accept="{{ fileTypes }}" style="display: none;" />
 </div>
 
 <script>
@@ -95,21 +102,19 @@ $().ready(function() {
             "quote", "unordered-list", "ordered-list", "|",
             {
                 name: "linkCustom",
-                action: function (editor) {
-                    simplemde.codemirror.replaceSelection("[]()");
-                    $("input[id='upload_file']").click();
+                action: function () {
+                    $("input[id='ce_upload_file']").click();
                 },
                 className: "fa fa-link",
-                title: "Upload File / Insert Link"
+                title: "Upload File & Insert Link"
             },
             {
                 name: "imageCustom",
-                action: function (editor){
-                    simplemde.codemirror.replaceSelection("![]()");
-                    $("input[id='upload_image']").click();
+                action: function () {
+                    $("input[id='ce_upload_image']").click();
                 },
                 className: "fa fa-picture-o",
-                title: "Upload Image / Insert Link"
+                title: "Upload Image & Insert Link"
             },
             "table", "|", "undo", "redo"
         ],
@@ -150,6 +155,34 @@ $().ready(function() {
             }
         });
     });
+
+    $("input[id='ce_upload_image']").change(function() { ce_uploader( '{{ imgExts }}', '{{ imgTypes }}', true )});
+    $("input[id='ce_upload_file']").change(function() { ce_uploader( '{{ fileExts }}', '{{ fileTypes }}', false )});
+
+    function ce_uploader(exts, types, isImg ) {
+        simpleUpload( '{{ base_url_absolute ~ page.route }}' , {
+            allowedExts: exts,
+            allowedTypes: types,
+            maxFileSize: 1024 * 1024 * 5,
+            data: {
+                ce_data_post: true,
+                action: 'ceFileUpload',
+                page: route
+            },
+            success: function( result ) {
+                if ( result && result != 'false' ) {
+                    var sel = simplemde.codemirror.getSelection();
+                    simplemde.codemirror.replaceSelection( (isImg? '![0':'[') + sel + ']' + '(' + result +')' );
+                } else {
+                    alert('Upload failed, GRAV says ' + result );
+                }
+            },
+            error: function(error) {
+                alert(error.name + ": " + error.message);
+            }
+        });
+    }
+
 });
 
 function ce_edit_md( p_route, review ) {
@@ -171,6 +204,8 @@ function ce_edit_md( p_route, review ) {
         success: function(response)
         {
             taint = false;
+            $('#ce_editor_container').css('display','inherit');
+            $('#ce_no_route').css('display','none');
             simplemde.value(response);
         }
     });
