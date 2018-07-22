@@ -50,10 +50,10 @@ form:
         type: select
         label: 'Edit Report'
         help: 'How edit difference is rendered when stored, and shown via DataManager in Admin Panel.'
-        highlight: 0
-        default: 0
+        highlight: html_side_side
+        default: html_side_side
         options:
-            0: HTML Side by Side
-            1: HTML Inline
-            2: Text Unified
-            3: Text Context
+            html_side_side: 'HTML Side by Side'
+            html_inline: 'HTML Inline'
+            txt_unified: 'Text Unified'
+            txt_context: 'Text Context'

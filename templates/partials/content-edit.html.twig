@@ -23,7 +23,7 @@
 {% endmacro %}
 
 {% set iOn = config.plugins['content-edit']['iframePreview'] %}
-{% set dOn = config.plugins['content-edit']['idivPreview'] %}
+{% set dOn = config.plugins['content-edit']['divPreview'] %}
 {% set prev =  iOn or dOn %}
 {% set imgExts = 'jpg,jpeg,png,gif,svg' %}
 {% set imgTypes = 'image/gif,image/x-gif,image/jpeg,image/pjpeg,image/png,image/x-png,image/svg+xml' %}
@@ -156,33 +156,56 @@ $().ready(function() {
         });
     });
 
-    $("input[id='ce_upload_image']").change(function() { ce_uploader( '{{ imgExts }}', '{{ imgTypes }}', true )});
-    $("input[id='ce_upload_file']").change(function() { ce_uploader( '{{ fileExts }}', '{{ fileTypes }}', false )});
-
-    function ce_uploader(exts, types, isImg ) {
-        simpleUpload( '{{ base_url_absolute ~ page.route }}' , {
-            allowedExts: exts,
-            allowedTypes: types,
-            maxFileSize: 1024 * 1024 * 5,
+    $("input[id='ce_upload_image']").change(function() {
+        $(this).simpleUpload( '{{ base_url_absolute ~ page.route }}' , {
             data: {
                 ce_data_post: true,
                 action: 'ceFileUpload',
                 page: route
             },
-            success: function( result ) {
-                if ( result && result != 'false' ) {
-                    var sel = simplemde.codemirror.getSelection();
-                    simplemde.codemirror.replaceSelection( (isImg? '![0':'[') + sel + ']' + '(' + result +')' );
-                } else {
-                    alert('Upload failed, GRAV says ' + result );
+            allowedExts: '{{ imgExts }}'.split(','),
+            allowedTypes: '{{ imgTypes }}'.split(','),
+            maxFileSize: 1024 * 1024 * 5,
+            success: function(result) {
+                // result from Grav
+                if ( ! result || /ERR::/.test(result) ) {
+                    alert('Website says: ' + result.substring(5));
+                }
+                else {
+                    var selctn = simplemde.codemirror.getSelection();
+                    simplemde.codemirror.replaceSelection('![' + selctn + '](' + result + ')');
                 }
             },
             error: function(error) {
                 alert(error.name + ": " + error.message);
             }
         });
-    }
-
+    });
+    $("input[id='ce_upload_file']").change(function() {
+        $(this).simpleUpload( '{{ base_url_absolute ~ page.route }}' , {
+            data: {
+                ce_data_post: true,
+                action: 'ceFileUpload',
+                page: route
+            },
+            allowedExts: '{{ fileExts }}'.split(','),
+            allowedTypes: '{{ fileTypes }}'.split(','),
+            maxFileSize: 1024 * 1024 * 5,
+            success: function(result) {
+                // result from Grav
+                if ( ! result || /ERR::/.test(result) ) {
+                    alert('Website says: ' + result.substring(5));
+                }
+                else {
+                    var selctn = simplemde.codemirror.getSelection();
+                    simplemde.codemirror.replaceSelection('[' + selctn + '](' + result + ')');
+                }
+            },
+            error: function(error) {
+                alert(error.name + ": " + error.message);
+            }
+        });
+    });
 });
 
 function ce_edit_md( p_route, review ) {
@@ -196,7 +219,10 @@ function ce_edit_md( p_route, review ) {
     $('#ce_ok_msg').css('display','none');
     $('#ce_fail_msg').css('display','none');
     $('#ce_saving_msg').css('display','none');
-    {% if prev %}$('#ce_preview_btn').prop('disabled', ! review);{% endif %}
+    {% if prev %}
+        $('#ce_preview_btn').prop('disabled', ! review).css('display','inherit');
+        $('#ce_edit_btn').css('display','none');
+    {% endif %}
     $.ajax({
         type: "POST",
         url: '{{ base_url_absolute ~ page.route }}',
@@ -206,6 +232,8 @@ function ce_edit_md( p_route, review ) {
             taint = false;
             $('#ce_editor_container').css('display','inherit');
             $('#ce_no_route').css('display','none');
+            {% if iOn %}$('#ce_content_frame').css('display','none');{% endif %}
+            {% if dOn %}$('#ce_content_div').css('display','none');{% endif %}
             simplemde.value(response);
         }
     });

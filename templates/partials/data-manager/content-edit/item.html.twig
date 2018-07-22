@@ -4,12 +4,17 @@
     <button id="ce_close_all">Close All</button>
     {% for item in data %}
         <div class="ce_data_line">
-           <input type="checkbox" class="ce_toggle" data-index="{{loop.index}}" />
-            <span class="ce_date"><strong>Date: </strong>{{item.date}}</span><span class="ce_user"> <strong> Edited by: </strong>{{item.user}}</span> <span class="ce_route"><strong> Route: </strong> {{ item.route }}</span>
+           <input type="checkbox" class="ce_toggle" data-index="{{loop.index}}" {% if item.upload %}disabled{% endif %}/>
+            <span class="ce_date"><strong>Date: </strong> {{item.date}} </span>
+            <span class="ce_user"> <strong> Edited by: </strong> {{item.user}} </span>
+            <span class="ce_route"><strong> Route: </strong> {{ item.route }} </span>
+            {% if item.upload %}<span class="ce_upload"><strong> File uploaded: </strong> {{ item.upload }} </span>{% endif %}
         </div>
-        <div id="ce_item{{ loop.index }}"  style="display: none;" class="ce_data_diff">
-            {{ item.diff|raw }}
-        </div>
+        {% if item.diff %}
+            <div id="ce_item{{ loop.index }}"  style="display: none;" class="ce_data_diff">
+                {{ item.diff|raw }}
+            </div>
+        {% endif %}
     {% endfor %}
 </div>
 <script>
