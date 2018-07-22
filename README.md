@@ -165,7 +165,7 @@ The [php-diff library](https://github.com/chrisboulton/php-diff) provides for tw
 > Note: the diff rendering is generated at the time edits are saved, not at the time edits are viewed. So if a change is made in diff renderer, old edits will be shown in the previous form.
 
 Here is an example showing edits under each of the four rendering options:
-![](scrn_content_edit_datamanager_view.png)
+![](scrn_datamanager_view.png)
 
 ## Credits
 
