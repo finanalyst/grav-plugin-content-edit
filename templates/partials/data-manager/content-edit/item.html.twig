@@ -1,4 +1,4 @@
-{% set data = grav.twig.itemData %}
+{% set data = grav.twig.itemData? grav.twig.itemData : itemData %}
 <div class="ce_data_report">
     <button id="ce_open_all">Open All</button>
     <button id="ce_close_all">Close All</button>

@@ -1,0 +1,35 @@
+{% extends 'partials/base.html.twig' %}
+
+{% block content %}
+    {{ content }}
+    <ul style="list-style: none;">
+   {% for item in grav.twig.items %}
+        <li class="ce_item_line" data-filename="{{ item.route }}" data-selected="false">
+            <span class="ce_item_name">{{ item.name }}</span> with
+            <span class="ce_item_count">{{ item.count }}</span> edit{% if item.count > 1 %}s{% endif %}
+        </li>
+   {% endfor %}
+   </ul>
+   <div id="ce_editing_container" style="display: none"></div>
+ <script>
+ $(document).ready(function() {
+    $('.ce_item_line').click(function() {
+        $('.ce_item_line').each(function(){$(this).attr('data-selected','false');});
+        $(this).attr('data-selected','true');
+        var data = {
+            ce_data_post: true,
+            action: 'ceEditData',
+            file: $(this).attr('data-filename')
+        };
+        $.ajax({
+            type: "POST",
+            url: '{{ base_url_absolute ~ page.route }}',
+            data: data,
+            success: function( response ) {
+                $('#ce_editing_container').html(response).css('display','inherit');
+            }
+        });
+    });
+ });
+</script>
+{% endblock %}

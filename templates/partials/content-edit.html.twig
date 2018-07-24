@@ -22,9 +22,7 @@
     {% endfor %}
 {% endmacro %}
 
-{% set iOn = config.plugins['content-edit']['iframePreview'] %}
-{% set dOn = config.plugins['content-edit']['divPreview'] %}
-{% set prev =  iOn or dOn %}
+{% set prev = config.plugins['content-edit']['preview'] %}
 {% set imgExts = 'jpg,jpeg,png,gif,svg' %}
 {% set imgTypes = 'image/gif,image/x-gif,image/jpeg,image/pjpeg,image/png,image/x-png,image/svg+xml' %}
 {% set fileExts = 'css,doc,docx,gif,jpg,jpeg,png,mp3,mp4,pdf,ppt,pptx,svg,txt,xls,xlsx,zip' %}
@@ -51,8 +49,7 @@
         <textarea id="ce_md_container"></textarea>
     </div>
     <div id="ce_no_route" >Select a page to edit</div>
-    {% if iOn %}<iframe id="ce_content_frame" class="ce_content_styling" style="display: none;"></iframe>{% endif %}
-    {% if dOn %}<div id="ce_content_div" class="ce_content_styling"  style="display: none;"></div>{% endif %}
+    {% if prev %}<iframe id="ce_content_container" class="ce_content_styling"  style="display: none;"></iframe>{% endif %}
     <input type="file" id="ce_upload_image" accept="{{ imgTypes }}" style="display: none;" />
     <input type="file" id="ce_upload_file" accept="{{ fileTypes }}" style="display: none;" />
 </div>
@@ -68,8 +65,6 @@ $().ready(function() {
             $(this).css('display','none');
             $('#ce_edit_btn').css('display','inherit');
             $('#ce_editor_container').css('display','none');
-            {% if iOn %}$('#ce_content_frame').attr('src', '{{ base_url_absolute }}' + route ).css('display', 'inherit' );{% endif %}
-            {% if dOn %}
             var data = {
                 ce_data_post: true,
                 action: 'cePreviewContent',
@@ -81,17 +76,15 @@ $().ready(function() {
                 data: data,
                 success: function(response)
                 {
-                    $('#ce_content_div').html(response).css('display', 'inherit' );
+                    $('#ce_content_container').attr('srcdoc',response).css('display', 'inherit' );
                 }
             });
-            {% endif %}
         });
         $('#ce_edit_btn').click( function() {
             $(this).css('display','none');
             $('#ce_editor_container').css('display','inherit');
             $('#ce_preview_btn').css('display','inherit');
-            {% if iOn %}$('#ce_content_frame').css('display', 'none' );{% endif %}
-            {% if dOn %}$('#ce_content_div').css('display', 'none' );{% endif %}
+            $('#ce_content_container').css('display', 'none' );
         });
     {% endif %}
     simplemde = new SimpleMDE({
@@ -232,8 +225,7 @@ function ce_edit_md( p_route, review ) {
             taint = false;
             $('#ce_editor_container').css('display','inherit');
             $('#ce_no_route').css('display','none');
-            {% if iOn %}$('#ce_content_frame').css('display','none');{% endif %}
-            {% if dOn %}$('#ce_content_div').css('display','none');{% endif %}
+            {% if prev %}$('#ce_content_container').css('display','none');{% endif %}
             simplemde.value(response);
         }
     });

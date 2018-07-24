@@ -21,9 +21,8 @@
 .ce_data_report button {
   border-radius: 5px;
   margin-left: 10px;
-  padding: 4px; }
+  border: 2px solid transparent; }
   .ce_data_report button:hover {
-    padding: 2px;
     border: 2px solid #907a3a; }
   .ce_data_report button#ce_open_all {
     background-color: rgba(106, 231, 103, 0.3); }
@@ -32,6 +31,8 @@
 
 .ce_data_report .ce_data_line {
   margin-top: 10px; }
+  .ce_data_report .ce_data_line input:disabled {
+    visibility: hidden; }
   .ce_data_report .ce_data_line .ce_user {
     color: blue; }
     .ce_data_report .ce_data_line .ce_user strong {
@@ -43,6 +44,10 @@
   .ce_data_report .ce_data_line .ce_route {
     color: green; }
     .ce_data_report .ce_data_line .ce_route strong {
+      color: black; }
+  .ce_data_report .ce_data_line .ce_upload {
+    color: darkred; }
+    .ce_data_report .ce_data_line .ce_upload strong {
       color: black; }
 
 .ce_data_report .Differences {
@@ -120,3 +125,22 @@
 
 .ce_data_report .DifferencesInline .ChangeReplace del {
   background: #e99; }
+
+.ce_item_line {
+  border: 3px solid transparent; }
+  .ce_item_line:hover, .ce_item_line[data-selected=true] {
+    border: 3px solid burlywood;
+    border-radius: 10px; }
+  .ce_item_line[data-selected=true] {
+    background-color: rgba(137, 232, 243, 0.2); }
+  .ce_item_line .ce_item_name {
+    color: blue; }
+  .ce_item_line .ce_item_count {
+    color: green;
+    border: 1px solid gold;
+    border-radius: 10px; }
+
+#ce_editing_container {
+  border: 2px solid burlywood;
+  border-radius: 5px;
+  padding: 5px; }

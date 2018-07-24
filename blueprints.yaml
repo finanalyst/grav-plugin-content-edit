@@ -1,5 +1,5 @@
 name: Content Edit
-version: 1.0.0
+version: 1.1.0
 description: Frontend edit of content pages by users in groups
 icon: pencil-square-o
 author:
@@ -24,23 +24,12 @@ form:
         0: Disabled
       validate:
         type: bool
-    iframePreview:
+    preview:
       type: toggle
-      label: 'iFrame Preview window'
-      help: 'Some server/browser configurations generate an X-Header error'
+      label: 'Allow for a preview window'
+      help: 'No preview option will be allowed unless this is enabled'
       highlight: 1
       default: 1
-      options:
-        1: Enabled
-        0: Disabled
-      validate:
-        type: bool
-    divPreview:
-      type: toggle
-      label: div Preview.
-      help: 'An approximation of the page. Review quality depends on the template and complexity of the page.'
-      highlight: 0
-      default: 0
       options:
         1: Enabled
         0: Disabled
@@ -49,7 +38,7 @@ form:
     editReport:
         type: select
         label: 'Edit Report'
-        help: 'How edit difference is rendered when stored, and shown via DataManager in Admin Panel.'
+        help: 'How edit difference is rendered when stored for reviewing in DataManager or on frontend'
         highlight: html_side_side
         default: html_side_side
         options:

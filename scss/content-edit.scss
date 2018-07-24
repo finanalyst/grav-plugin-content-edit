@@ -23,9 +23,8 @@
     button {
         border-radius: 5px;
         margin-left: 10px;
-        padding: 4px;
+        border: 2px solid transparent;
         &:hover {
-            padding: 2px;
             border: 2px solid rgb(144,122,58);
         }
         &#ce_open_all {
@@ -37,6 +36,9 @@
     }
     .ce_data_line {
         margin-top: 10px;
+        input:disabled {
+            visibility: hidden;
+        }
         .ce_user {
             color: blue;
             strong {
@@ -56,7 +58,7 @@
             }
         }
         .ce_upload  {
-            color: burlywood;
+            color: darkred;
             strong {
                 color: black;
             }
@@ -154,4 +156,27 @@
             }
         }
     }
+}
+.ce_item_line {
+    border: 3px solid transparent;
+    &:hover, &[data-selected=true]  {
+        border: 3px solid burlywood;
+        border-radius: 10px;
+    }
+    &[data-selected=true] {
+        background-color: rgba(137, 232, 243, 0.2);
+    }
+    .ce_item_name {
+        color: blue;
+    }
+    .ce_item_count {
+        color: green;
+        border: 1px solid gold;
+        border-radius: 10px;
+    }
+}
+#ce_editing_container {
+    border: 2px solid burlywood;
+    border-radius: 5px;
+    padding: 5px;
 }

@@ -3,10 +3,11 @@ namespace Grav\Plugin;
 
 use Grav\Common\Plugin;
 use RocketTheme\Toolbox\Event\Event;
-use Grav\Common\Markdown\Parsedown;
-use Grav\Common\Markdown\ParsedownExtra;
 use RocketTheme\Toolbox\File\File;
+use Grav\Common\File\CompiledYamlFile;
+use Grav\Common\Filesystem\Folder;
 use Symfony\Component\Yaml\Yaml;
+use Grav\Common\Utils;
 
 /**
  * Class ContentEditPlugin
@@ -37,6 +38,7 @@ class ContentEditPlugin extends Plugin
         // Enable events we are interested in
         $this->enable([
             'onPagesInitialized' => ['onPagesInitialized', 0 ],
+            'onPageInitialized' => ['onPageInitialized', 0],
             'onTwigTemplatePaths' => ['onTwigTemplatePaths',0]
         ]);
         $path = DATA_DIR . 'content-edit' . DS . 'editing_for_' . date('Y-m_M_Y') . '.yaml';
@@ -81,6 +83,28 @@ class ContentEditPlugin extends Plugin
         $assets->addCss('plugin://content-edit/css/content-edit.css');
     }
 
+    public function onPageInitialized() {
+        // only needed if processing a content-editing template;
+        $page = $this->grav['page'];
+        if ( $page->template() !== 'content-edit-review' ) return;
+        $items = [];
+        $fileIterator = new \FilesystemIterator(DATA_DIR . 'content-edit', \FilesystemIterator::SKIP_DOTS);
+        foreach ($fileIterator as $entry) {
+            $file = $entry->getFilename();
+            if (!$entry->isFile() || !preg_match('/\d\d\d\d\-\d\d\_(.+)\_(.+)\.yaml$/', $file,$matches) ) {
+                // Is not file or not .yaml
+                continue;
+            }
+            $items[] = [
+                'name' => $matches[1] . ' ' . $matches[2],
+                'route' => $file,
+                'count' => count(CompiledYamlFile::instance(DATA_DIR . 'content-edit/' . $file)->content())
+            ];
+        }
+        $this->grav['twig']->items = $items;
+    //    sortArrayByKey($items, 'name', SORT_DESC, SORT_NATURAL);
+    }
+
     /**
      * Pass valid actions (via AJAX requests) on to the editor resource to handle
      *
@@ -108,11 +132,17 @@ class ContentEditPlugin extends Plugin
             case 'ceSaveContent': // Save markdown content
                 $output = $this->saveContent($post, $page);
                 break;
-            case 'cePreviewContent': // Render received markdown and return HTML
-                $output = $this->processMarkdown($post, $page);
+            case 'cePreviewContent': // Preview a route
+                $this->grav->redirect($post['page']);
                 break;
             case 'ceFileUpload': // Handle a file (or image) upload
                 $output = $this->saveFile($post, $page);
+                break;
+            case 'ceEditData':
+                $output = $this->grav['twig']->processTemplate(
+                    'partials/data-manager/content-edit/item.html.twig',
+                    [ 'itemData' => CompiledYamlFile::instance(DATA_DIR . 'content-edit/' . $post['file'])->content() ]
+                );
                 break;
             default:
                 return;
@@ -187,42 +217,6 @@ class ContentEditPlugin extends Plugin
         $this->logfile->save($this->logfile->content() . Yaml::dump( [ $record ] ) );
         // All is well, return uploaded filename, which cannot start with ERR::
         return $safeName;
-    }
-
-    /**
-     * Process the Markdown content. Uses Parsedown or Parsedown Extra depending on configuration
-     * Taken from Grav/Common/Page/Page.php and modified to process a supplied page
-     *
-     * @return string containing HTML
-     */
-    function processMarkdown($params, $page)
-    {
-        /** @var Config $config */
-        $config = $this->grav['config'];
-        $defaults = (array)$config->get('system.pages.markdown');
-
-        if (isset($page->header()->markdown)) {
-            $defaults = array_merge($defaults, $page->header()->markdown);
-        }
-
-        if (isset($this->header->markdown_extra)) {
-            $markdown_extra = (bool)$this->header->markdown_extra;
-        }
-
-        // pages.markdown_extra is deprecated, but still check it...
-        if (!isset($defaults['extra']) && (isset($markdown_extra) || $config->get('system.pages.markdown_extra') !== null)) {
-            $defaults['extra'] = $markdown_extra ?: $config->get('system.pages.markdown_extra');
-        }
-        // Initialize the preferred variant of Parsedown
-        if ($defaults['extra']) {
-            $parsedown = new ParsedownExtra($this, $defaults);
-        } else {
-            $parsedown = new Parsedown($this, $defaults);
-        }
-
-//        $html = $page->processMarkdown();
-        $html = $parsedown->text($page->content());
-        return $html;
     }
 
     function saveContent($params, $page) {

@@ -1,4 +1,3 @@
 enabled: true
-iframePreview: true
-divPreview: true
+preview: true
 editReport: html_side_side
