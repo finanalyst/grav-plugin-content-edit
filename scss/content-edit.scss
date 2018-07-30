@@ -1,10 +1,32 @@
 .ce_div {
     display: inline-flex;
     align-items: center;
-    span {
-    padding: 4px;
-    border-radius: 5px;
-    box-shadow: 0 4px 4px 0 rgba(0,0,0,0.2), 0 4px 20px 0 rgba(0,0,0,0.19);
+}
+.ce_button_bar {
+    display: none;
+    z-index: 1;
+    position: relative;
+    right: 10px;
+    top: 5px;
+    float: right;
+    #ce_menu_bar, #ce_lang_bar {
+        display: inline-flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0 0 0 15px;
+        label {
+            margin: auto;
+            font-size: x-small;
+        }
+        p {
+            margin: auto;
+        }
+        input[type=text]#ce_menu {
+            border: 1px solid darkgray;
+            margin: 0;
+            font-size: medium;
+            padding: 0 0 0 5px;
+        }
     }
 }
 .ce_content_styling {
@@ -15,6 +37,7 @@
     height: 90vh;
     overflow: auto;
     display: none;
+    margin-top: 5px;
 }
 .CodeMirror {
     height: 90vh;
@@ -57,11 +80,17 @@
                 color: black;
             }
         }
-        .ce_upload  {
+        .ce_lang, .ce_upload  {
             color: darkred;
             strong {
                 color: black;
             }
+        }
+    }
+    .ce_menu  {
+        color: darkblue;
+        strong {
+            color: black;
         }
     }
     .Differences {
@@ -156,6 +185,9 @@
             }
         }
     }
+}
+.ce_lang_selector[data-selected=true] {
+    background-color: rgba(156, 243, 137, 0.55);
 }
 .ce_item_line {
     border: 3px solid transparent;

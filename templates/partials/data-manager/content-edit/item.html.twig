@@ -1,18 +1,24 @@
 {% set data = grav.twig.itemData? grav.twig.itemData : itemData %}
 <div class="ce_data_report">
-    <button id="ce_open_all">Open All</button>
-    <button id="ce_close_all">Close All</button>
+    <button id="ce_open_all">{{"PLUGIN_CONTENT_EDIT.OP_ALL"|t}}</button>
+    <button id="ce_close_all">{{"PLUGIN_CONTENT_EDIT.CL_ALL"|t}}</button>
     {% for item in data %}
         <div class="ce_data_line">
            <input type="checkbox" class="ce_toggle" data-index="{{loop.index}}" {% if item.upload %}disabled{% endif %}/>
-            <span class="ce_date"><strong>Date: </strong> {{item.date}} </span>
-            <span class="ce_user"> <strong> Edited by: </strong> {{item.user}} </span>
-            <span class="ce_route"><strong> Route: </strong> {{ item.route }} </span>
-            {% if item.upload %}<span class="ce_upload"><strong> File uploaded: </strong> {{ item.upload }} </span>{% endif %}
+            <span class="ce_date"><strong>{{"PLUGIN_CONTENT_EDIT.DATE"|t}}</strong> {{item.date}} </span>
+            <span class="ce_user"> <strong>{{"PLUGIN_CONTENT_EDIT.ED_BY"|t}}</strong> {{item.user}} </span>
+            <span class="ce_route"><strong>{{"PLUGIN_CONTENT_EDIT.ROUTE"|t}}</strong> {{ item.route }} </span>
+            <span class="ce_lang"><strong>{{"PLUGIN_CONTENT_EDIT.LANG_C"|t}}</strong> {{ item.lang }} </span>
+            {% if item.upload %}<span class="ce_upload"><strong>{{"PLUGIN_CONTENT_EDIT.FILE_UP"|t}}</strong> {{ item.upload }} </span>{% endif %}
         </div>
-        {% if item.diff %}
+        {% if item.diff or item.menu %}
             <div id="ce_item{{ loop.index }}"  style="display: none;" class="ce_data_diff">
-                {{ item.diff|raw }}
+                {% if item.diff %}{{ item.diff|raw }}
+                {% else %}<div class="ce_menu">
+                    <strong>{{"PLUGIN_CONTENT_EDIT.OLD_M"|t}}</strong> {{ item.menu.old }}
+                    <strong>{{"PLUGIN_CONTENT_EDIT.NEW_M"|t}}</strong>{{ item.menu.new }}
+                    </div>
+                {% endif %}
             </div>
         {% endif %}
     {% endfor %}

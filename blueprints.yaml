@@ -1,12 +1,12 @@
 name: Content Edit
-version: 1.1.0
+version: 1.2.0
 description: Frontend edit of content pages by users in groups
 icon: pencil-square-o
 author:
   name: Richard N Hainsworth
   email: rnhainsworth@gmail.com
 homepage: https://github.com/finanalyst/grav-plugin-content-edit
-keywords: grav, plugin, content, edit, frontend
+keywords: grav, plugin, content, edit, frontend, multi-language
 bugs: https://github.com/finanalyst/grav-plugin-content-edit/issues
 docs: https://github.com/finanalyst/grav-plugin-content-edit/blob/develop/README.md
 license: MIT

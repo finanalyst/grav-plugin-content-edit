@@ -1,17 +1,30 @@
 {% macro ce_loop(base, clctn, prev) %}
     {% for p in clctn %}
-        {% if not (p.template == 'content-edit') %}
+        {% if not (p.template == 'content-edit' or p.header.contentEdit.dontInclude) %}
             {% set review = not (p.modular or p.header.contentEdit.nopreview) %}
+            {% set langs = p.translatedLanguages() %}
             <li><div class="ce_div">
               {{ p.title }}
               {% if not p.header.contentEdit.noedit %}
-                    &nbsp;<button onclick="ce_edit_md( '{{ p.route }}' , {{ review ? 'true' : 'false' }} )"  style="color: red;">EDIT</button>
+                  {% if langs %}
+                        {% for lang, val in langs %}
+                            &nbsp;<a  class="ce_lang_selector button" data-r="{{ p.route }}" data-rv="{{ review ? 'true' : 'false' }}" data-l="{{ lang }}">{{ lang }}</a>
+                        {% endfor %}
+                  {% else %}
+                        &nbsp;<a class="ce_lang_selector button" data-r="{{ p.route }}" data-rv="{{ review ? 'true' : 'false' }}" data-l="Default">{{ "PLUGIN_CONTENT_EDIT.DEF_L"|t }}</a>
+                  {% endif %}
                {% endif %}
                {% if  review %}
                     {% if prev %}
-                        &nbsp;<span  style="color: #aa1292;">Can Preview</span>
+                        &nbsp;<span  style="color: #aa1292;">{{"PLUGIN_CONTENT_EDIT.PREVIEWABLE"|t}}</span>
                     {% endif %}
-                    &nbsp;<a href="{{ base ~ p.route }}" style="color: blue;" target="_blank">GOTO<sup><i class="fa fa-external-link"></i></sup></a>
+                    {% if langs %}
+                          {% for lang, val in langs %}
+                              &nbsp;<a href="{{ base ~ '/'  ~ lang~ p.route }}" style="color: blue;" target="_blank"><sub>{{lang}}</sub><sup><i class="fa fa-external-link"></i></sup></a>
+                          {% endfor %}
+                    {% else %}
+                        &nbsp;<a href="{{ base ~ p.route }}" style="color: blue;" target="_blank">{{"PLUGIN_CONTENT_EDIT.GOTO"|t}}<sup><i class="fa fa-external-link"></i></sup></a>
+                    {% endif %}
                {% endif %}
            </div>
            {% if p.children.count > 0 %}
@@ -29,26 +42,25 @@
 {% set fileTypes = 'application/msword,application/pdf,application/x-pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/zip,text/css,text/plain,audio/mp3,video/mpeg,video/mp4,' ~ imgTypes %}
 
 <ul class="tree">
-    {{  _self.ce_loop( base_url_absolute, page.collection, prev  ) }}
+    {{  _self.ce_loop( base_url_simple, page.collection, prev  ) }}
 </ul>
 <div class="ce_section">
-    <div class="ce_div" >
-        <button id="ce_save_btn" disabled>
-            Save&nbsp;<i class="fa fa-download fa-lg"></i>
-        </button>
+    <div class="ce_button_bar" >
+        <a id="ce_save_btn" class="button" style="display: none;">
+            <span id="ce_save_inner">{{"PLUGIN_CONTENT_EDIT.SAVE"|t}}&nbsp;<i class="fa fa-download fa-lg"></i></span>
+            <span id="ce_saving_msg" style="display: none;">{{"PLUGIN_CONTENT_EDIT.SAVING"|t}}</span>
+        </a>
         {% if prev %}
-            &nbsp;<button id="ce_preview_btn" disabled>Preview&nbsp;<i class="fa fa-eye fa-lg"></i></button>
-            <button id="ce_edit_btn" style="display: none;">Edit&nbsp;<i class="fa fa-pencil-square-o fa-lg"></i></button>
+            &nbsp;<a id="ce_preview_btn" class="button" >{{"PLUGIN_CONTENT_EDIT.PREV"|t}}&nbsp;<i class="fa fa-eye fa-lg"></i></a>
+            <a id="ce_edit_btn" class="button" style="display: none;">{{"PLUGIN_CONTENT_EDIT.EDIT"|t}}&nbsp;<i class="fa fa-pencil-square-o fa-lg"></i></a>
         {% endif %}
-        &nbsp;<span id="ce_saving_msg" style="color: blue; display: none;">Saving Content</span>
-        <span id="ce_fail_msg" style="color: red; display: none;">Save Failure</span>
-        <span id="ce_ok_msg" style="color: green; display: none;">Edits Saved</span>
-        <span id="ce_notsaved_msg" style="color: red; display: none">Unsaved Changes</span>
+        <div id="ce_menu_bar"><label>{{"PLUGIN_CONTENT_EDIT.MENU"|t}}</label><input type="text" id="ce_menu" /></div>
+        <div id="ce_lang_bar"><label>{{"PLUGIN_CONTENT_EDIT.LANG"|t}}</label><p id="ce_language"></p></div>
     </div>
     <div id="ce_editor_container" class="simplemde" style="display: none;">
         <textarea id="ce_md_container"></textarea>
     </div>
-    <div id="ce_no_route" >Select a page to edit</div>
+    <div id="ce_no_route" >{{"PLUGIN_CONTENT_EDIT.NO_ROUTE"|t}}</div>
     {% if prev %}<iframe id="ce_content_container" class="ce_content_styling"  style="display: none;"></iframe>{% endif %}
     <input type="file" id="ce_upload_image" accept="{{ imgTypes }}" style="display: none;" />
     <input type="file" id="ce_upload_file" accept="{{ fileTypes }}" style="display: none;" />
@@ -65,18 +77,23 @@ $().ready(function() {
             $(this).css('display','none');
             $('#ce_edit_btn').css('display','inherit');
             $('#ce_editor_container').css('display','none');
+            $('#ce_save_btn').css('display', 'none');
+            $('#ce_menu_bar').css('display','none');
             var data = {
                 ce_data_post: true,
                 action: 'cePreviewContent',
-                page: route
+                page: route,
+                language: $('#ce_language').html(),
             };
             $.ajax({
                 type: "POST",
                 url: '{{ base_url_absolute ~ page.route }}',
                 data: data,
+                language: $('#ce_language').html(),
                 success: function(response)
                 {
                     $('#ce_content_container').attr('srcdoc',response).css('display', 'inherit' );
+                    if ( taint ) { $('#ce_save_btn').css('display','inherit'); }
                 }
             });
         });
@@ -85,6 +102,8 @@ $().ready(function() {
             $('#ce_editor_container').css('display','inherit');
             $('#ce_preview_btn').css('display','inherit');
             $('#ce_content_container').css('display', 'none' );
+            if (taint ) $('#ce_save_btn').css('display','inherit');
+            $('#ce_menu_bar').css('display','inline-flex');
         });
     {% endif %}
     simplemde = new SimpleMDE({
@@ -99,7 +118,7 @@ $().ready(function() {
                     $("input[id='ce_upload_file']").click();
                 },
                 className: "fa fa-link",
-                title: "Upload File & Insert Link"
+                title: "{{"PLUGIN_CONTENT_EDIT.FILE_UPLOAD"|t}}"
             },
             {
                 name: "imageCustom",
@@ -107,28 +126,31 @@ $().ready(function() {
                     $("input[id='ce_upload_image']").click();
                 },
                 className: "fa fa-picture-o",
-                title: "Upload Image & Insert Link"
+                title: "{{"PLUGIN_CONTENT_EDIT.IMG_UPLOAD"|t}}"
             },
-            "table", "|", "undo", "redo"
+            "|","table", "|", "undo", "redo"
         ],
         forceSync: false,
         status: false
     });
     simplemde.codemirror.on("change", function(){
         if (! taint ) { taint = true; return; }
-    	$('#ce_notsaved_msg').css('display','inherit');
-        $('#ce_ok_msg').css('display','none');
-        $('#ce_fail_msg').css('display','none');
-    	$('#ce_saving_msg').css('display','none');
-        $('#ce_save_btn').prop('disabled', false);
+        $('#ce_save_btn').css('display','inherit');
+    });
+    $('#ce_menu').on('change',function() {
+        taint = true;
+        $('#ce_save_btn').css('display','inherit');
     });
     $('#ce_save_btn').click(function ( ) {
         $('#ce_saving_msg').css('display', 'inherit');
+        $('#ce_save_inner').css('display','none');
         var data = {
             ce_data_post: true,
             action: 'ceSaveContent',
             page: route,
-            content: simplemde.value()
+            language: $('#ce_language').html(),
+            content: simplemde.value(),
+            menu: $('#ce_menu').val()
         };
         $.ajax({
             type: "POST",
@@ -138,12 +160,8 @@ $().ready(function() {
             {
                 if (response.toLowerCase() === 'ok') {
                     $('#ce_saving_msg').css('display', 'none');
-                    $('#ce_ok_msg').css('display', 'inherit');
-                    $('#ce_notsaved_msg').css('display','none');
-                    $('#ce_save_btn').prop('disabled', true);
-                } else {
-                    $('#ce_saving_msg').css('display', 'none');
-                    $('#ce_fail_msg').css('display', 'inherit');
+                    $('#ce_save_inner').css('display','inherit');
+                    $('#ce_save_btn').css('display','none');
                 }
             }
         });
@@ -187,7 +205,7 @@ $().ready(function() {
             success: function(result) {
                 // result from Grav
                 if ( ! result || /ERR::/.test(result) ) {
-                    alert('Website says: ' + result.substring(5));
+                    alert('{{"PLUGIN_CONTENT_EDIT.WEB_ALERT"|t}}' + result.substring(5));
                 }
                 else {
                     var selctn = simplemde.codemirror.getSelection();
@@ -199,35 +217,51 @@ $().ready(function() {
             }
         });
     });
-});
 
-function ce_edit_md( p_route, review ) {
-    var data = {
-        ce_data_post: true,
-        action: 'ceTransferContent',
-        page: p_route
-    };
-    route = p_route;
-    $('#ce_notsaved_msg').css('display','none');
-    $('#ce_ok_msg').css('display','none');
-    $('#ce_fail_msg').css('display','none');
-    $('#ce_saving_msg').css('display','none');
-    {% if prev %}
-        $('#ce_preview_btn').prop('disabled', ! review).css('display','inherit');
-        $('#ce_edit_btn').css('display','none');
-    {% endif %}
-    $.ajax({
-        type: "POST",
-        url: '{{ base_url_absolute ~ page.route }}',
-        data: data,
-        success: function(response)
-        {
-            taint = false;
-            $('#ce_editor_container').css('display','inherit');
-            $('#ce_no_route').css('display','none');
-            {% if prev %}$('#ce_content_container').css('display','none');{% endif %}
-            simplemde.value(response);
-        }
+    $('.ce_lang_selector').click( function() {
+        var data = {
+            ce_data_post: true,
+            action: 'ceTransferContent',
+            page: $(this).attr('data-r'),
+            language: $(this).attr('data-l')
+        };
+        route = data.page;
+        $('#ce_language').html(data.language);
+        {% if prev %}
+            if ( $(this).attr('data-rv') == 'true' ) {
+                $('#ce_preview_btn').css('display','inherit');
+                $('#ce_edit_btn').css('display','none');
+            } else {
+                $('#ce_preview_btn').css('display','none');
+                $('#ce_edit_btn').css('display','none');
+            }
+        {% endif %}
+        $('.ce_lang_selector').each( function(e){
+            $(this).removeAttr('data-selected');
+        });
+        $(this).attr('data-selected','true');
+        $.ajax({
+            type: "POST",
+            url: '{{ base_url_absolute ~ page.route }}',
+            data: data,
+            success: function(response)
+            {
+                $('.ce_button_bar').css('display','inline-flex');
+                $('#ce_editor_container').css('display','inherit');
+                $('#ce_no_route').css('display','none');
+                $('#ce_save_btn').css('display','none');
+                {% if prev %}$('#ce_content_container').css('display','none');{% endif %}
+                simplemde.value(response.data);
+                if ( response.menuexists ) {
+                    $('#ce_menu').val(response.menu).prop('disabled', false);
+                    $('#ce_menu_bar').css('display','inherit');
+                } else {
+                    $('#ce_menu').val(response.menu).prop('disabled', true);
+                    $('#ce_menu_bar').css('display','inherit');
+                }
+                taint = false;
+            }
+        });
     });
-}
+});
 </script>

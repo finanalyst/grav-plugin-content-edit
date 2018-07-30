@@ -2,6 +2,7 @@
 namespace Grav\Plugin;
 
 use Grav\Common\Plugin;
+use Grav\Common\Page\Page;
 use RocketTheme\Toolbox\Event\Event;
 use RocketTheme\Toolbox\File\File;
 use Grav\Common\File\CompiledYamlFile;
@@ -17,6 +18,7 @@ class ContentEditPlugin extends Plugin
 {
     protected $logfile;
     protected $renderer;
+    protected $edits_loc = 'content-edit';
 
     public static function getSubscribedEvents()
     {
@@ -41,7 +43,7 @@ class ContentEditPlugin extends Plugin
             'onPageInitialized' => ['onPageInitialized', 0],
             'onTwigTemplatePaths' => ['onTwigTemplatePaths',0]
         ]);
-        $path = DATA_DIR . 'content-edit' . DS . 'editing_for_' . date('Y-m_M_Y') . '.yaml';
+        $path = DATA_DIR . $this->edits_loc . DS . 'editing_for_' . date('Y-m_M_Y') . '.yaml';
         $this->logfile = File::instance($path);
         require_once __DIR__ . '/embedded/php-diff-master/lib/Diff.php';
         switch ( $this->config->get('plugins.content-edit.editReport') ) {
@@ -61,6 +63,10 @@ class ContentEditPlugin extends Plugin
             default:
                 require_once __DIR__ . '/embedded/php-diff-master/lib/Diff/Renderer/Text/Context.php';
                 $this->renderer = new \Diff_Renderer_Text_Context;
+        }
+        # verify data directory exists with correct permissions
+        if (!file_exists(DATA_DIR . $this->edits_loc )) {
+            mkdir(DATA_DIR . $this->edits_loc , 0775, true);
         }
     }
 
@@ -88,7 +94,7 @@ class ContentEditPlugin extends Plugin
         $page = $this->grav['page'];
         if ( $page->template() !== 'content-edit-review' ) return;
         $items = [];
-        $fileIterator = new \FilesystemIterator(DATA_DIR . 'content-edit', \FilesystemIterator::SKIP_DOTS);
+        $fileIterator = new \FilesystemIterator(DATA_DIR . $this->edits_loc, \FilesystemIterator::SKIP_DOTS);
         foreach ($fileIterator as $entry) {
             $file = $entry->getFilename();
             if (!$entry->isFile() || !preg_match('/\d\d\d\d\-\d\d\_(.+)\_(.+)\.yaml$/', $file,$matches) ) {
@@ -98,7 +104,7 @@ class ContentEditPlugin extends Plugin
             $items[] = [
                 'name' => $matches[1] . ' ' . $matches[2],
                 'route' => $file,
-                'count' => count(CompiledYamlFile::instance(DATA_DIR . 'content-edit/' . $file)->content())
+                'count' => count(CompiledYamlFile::instance(DATA_DIR . $this->edits_loc . DS . $file)->content())
             ];
         }
         $this->grav['twig']->items = $items;
@@ -123,29 +129,42 @@ class ContentEditPlugin extends Plugin
         if (!$post || ! isset($post['ce_data_post']) ) {
             return;
         }
-        $pages = $this->grav['pages'];
-        $page = $pages->dispatch($post['page'], true);
-        switch ($post['action']) {
-            case 'ceTransferContent': // Transfer the md for the page
-                $output = $page->rawMarkdown();
-                break;
-            case 'ceSaveContent': // Save markdown content
-                $output = $this->saveContent($post, $page);
-                break;
-            case 'cePreviewContent': // Preview a route
-                $this->grav->redirect($post['page']);
-                break;
-            case 'ceFileUpload': // Handle a file (or image) upload
-                $output = $this->saveFile($post, $page);
-                break;
-            case 'ceEditData':
-                $output = $this->grav['twig']->processTemplate(
-                    'partials/data-manager/content-edit/item.html.twig',
-                    [ 'itemData' => CompiledYamlFile::instance(DATA_DIR . 'content-edit/' . $post['file'])->content() ]
-                );
-                break;
-            default:
-                return;
+        // Preemtively handle review edits ajax call
+        if ($post['action'] == 'ceReviewEdits') {
+            $output = $this->grav['twig']->processTemplate(
+                'partials/data-manager/content-edit/item.html.twig',
+                [ 'itemData' => CompiledYamlFile::instance(DATA_DIR . $this->edits_loc . DS . $post['file'])->content() ]
+            );
+        } else {
+            $pages = $this->grav['pages'];
+            $page = $pages->dispatch($post['page'] , true);
+            if ($post['language'] != 'Default' ) {
+                $fn = preg_match('/^(.+)\..+?\.md$/', $page->name(), $matches);
+                if ($fn) {
+                    $fileP = $page->path() . DS . $matches[1] . '.' . $post['language'] . '.md';
+                    $route = $page->route();
+                    $page = new Page();
+                    $page->init(new \SplFileInfo($fileP), $post['language'] . '.md');
+                }
+            }
+            switch ($post['action']) {
+                case 'ceTransferContent': // Transfer the md for the page
+                    $menuExists = $page->header()->{'menu'} != null;
+                    $output = [ 'data' => $page->rawMarkdown(), 'menu' => $page->menu(), 'menuexists' => $menuExists ];
+                    break;
+                case 'ceSaveContent': // Save markdown content
+                    $output = $this->saveContent($post, $page);
+                    break;
+                case 'cePreviewContent': // Preview a route
+                    $r =  ( $post['language'] == 'Default' ? '' : $post['language'] ) . $post['page'] ;
+                    $this->grav->redirect($r);
+                    break;
+                case 'ceFileUpload': // Handle a file (or image) upload
+                    $output = $this->saveFile($post, $page);
+                    break;
+                default:
+                    return;
+            }
         }
         $this->setHeaders();
         echo json_encode($output);
@@ -220,22 +239,43 @@ class ContentEditPlugin extends Plugin
     }
 
     function saveContent($params, $page) {
-        // save to page route
-        $new = $params['content'];
+        $new_content = $params['content'];
+        $newMenu = $params['menu'];
         $old=$page->rawMarkdown();
-        $page->rawMarkdown($new);
-        $page->save();
+        $oldMenu = $page->menu();
         // log user save
         // Options for generating the diff
-        $options = array(
-            //'ignoreWhitespace' => true,
-            //'ignoreCase' => true,
-        );
-        // Initialize the diff class
-        $diff = new \Diff(explode("\n", $old), explode("\n",$new), $options);
-        $rendered=$diff->render($this->renderer) ;
-        $record = [ 'date' => date('D d H:i:s'), 'user' => $this->grav['user']->username , 'route' => $params['page'], 'diff' => $rendered ];
-        $this->logfile->save($this->logfile->content() . Yaml::dump( [ $record ] ) );
+        $dif_options = array();
+        $taint = false;
+        $record = [];
+        if ( $old != $new_content ) {
+            $taint = true;
+            $page->rawMarkdown($new_content );
+            $diff = new \Diff(explode("\n", $old), explode("\n",$new_content ), $dif_options);
+            $rendered=$diff->render($this->renderer) ;
+            $record[] = [
+                'date' => date('D d H:i:s'),
+                'user' => $this->grav['user']->username ,
+                'route' => $params['page'],
+                'lang' => $params['language'],
+                'diff' => $rendered
+            ];
+        }
+        if ( $page->header()->{'menu'} != null && $newMenu != $oldMenu ) { // Cannot use p->menu() to replace if no menu originally set.
+            $taint = true;
+            $page->modifyHeader('menu', $newMenu );
+            $record[] = [
+                'date' => date('D d H:i:s'),
+                'user' => $this->grav['user']->username ,
+                'route' => $params['page'],
+                'lang' => $params['language'],
+                'menu' => [ 'old' => $oldMenu, 'new' => $newMenu ]
+            ];
+        }
+        if ( $taint ) {
+            $page->save();
+            $this->logfile->save($this->logfile->content() . Yaml::dump( $record ) );
+        }
         return 'ok';
     }
     /* Next two functions copied directly from editable-simplemd plugin.
