@@ -83,7 +83,7 @@ $().ready(function() {
                 ce_data_post: true,
                 action: 'cePreviewContent',
                 page: route,
-                language: $('#ce_language').html(),
+                language: $('#ce_language').html()
             };
             $.ajax({
                 type: "POST",
@@ -94,6 +94,9 @@ $().ready(function() {
                 {
                     $('#ce_content_container').attr('srcdoc',response).css('display', 'inherit' );
                     if ( taint ) { $('#ce_save_btn').css('display','inherit'); }
+                },
+                error: function(error) {
+                    alert(error.name + ": " + error.message);
                 }
             });
         });
@@ -163,6 +166,9 @@ $().ready(function() {
                     $('#ce_save_inner').css('display','inherit');
                     $('#ce_save_btn').css('display','none');
                 }
+            },
+            error: function(error) {
+                alert(error.name + ": " + error.message);
             }
         });
     });
@@ -172,7 +178,8 @@ $().ready(function() {
             data: {
                 ce_data_post: true,
                 action: 'ceFileUpload',
-                page: route
+                page: route,
+                language: $('#ce_language').html()
             },
             allowedExts: '{{ imgExts }}'.split(','),
             allowedTypes: '{{ imgTypes }}'.split(','),
@@ -197,13 +204,13 @@ $().ready(function() {
             data: {
                 ce_data_post: true,
                 action: 'ceFileUpload',
-                page: route
+                page: route,
+                language: $('#ce_language').html()
             },
             allowedExts: '{{ fileExts }}'.split(','),
             allowedTypes: '{{ fileTypes }}'.split(','),
             maxFileSize: 1024 * 1024 * 5,
             success: function(result) {
-                // result from Grav
                 if ( ! result || /ERR::/.test(result) ) {
                     alert('{{"PLUGIN_CONTENT_EDIT.WEB_ALERT"|t}}' + result.substring(5));
                 }
@@ -260,6 +267,12 @@ $().ready(function() {
                     $('#ce_menu_bar').css('display','inherit');
                 }
                 taint = false;
+            },
+            error: function(error) {
+                alert(error.name + ": " + error.message);
+                $('.ce_lang_selector').each( function(e){
+                    $(this).removeAttr('data-selected');
+                });
             }
         });
     });

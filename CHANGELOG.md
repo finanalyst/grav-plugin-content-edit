@@ -1,3 +1,8 @@
+# v1.2.1
+## 8 August 2018
+1. [](#bugfix)
+    * Add language data to load file/image (not used, but option needs to be set)
+
 # v1.2.0
 ## 30 July 2018
 1. [](#enhancement)

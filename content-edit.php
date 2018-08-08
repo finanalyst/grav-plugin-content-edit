@@ -123,7 +123,6 @@ class ContentEditPlugin extends Plugin
             $this->active = false;
             return;
         }
-
         // Do not act upon empty POST payload or any POST not for this plugin
         $post = $_POST;
         if (!$post || ! isset($post['ce_data_post']) ) {
@@ -173,7 +172,6 @@ class ContentEditPlugin extends Plugin
 
     // Nearly all from editable-simplemde
     public function saveFile($params, $page) {
-        /** @var Config $config */
         $config = $this->grav['config'];
         if (!isset($_FILES['file']['error']) || is_array($_FILES['file']['error'])) {
             return 'ERR::Unknown Errors';
