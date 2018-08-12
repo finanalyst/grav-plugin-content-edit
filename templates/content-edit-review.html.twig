@@ -15,21 +15,26 @@
      <script>
          $(document).ready(function() {
             $('.ce_item_line').click(function() {
-                $('.ce_item_line').each(function(){$(this).attr('data-selected','false');});
-                $(this).attr('data-selected','true');
-                var data = {
-                    ce_data_post: true,
-                    action: 'ceReviewEdits',
-                    file: $(this).attr('data-filename')
-                };
-                $.ajax({
-                    type: "POST",
-                    url: '{{ base_url_absolute ~ page.route }}',
-                    data: data,
-                    success: function( response ) {
-                        $('#ce_editing_container').html(response).css('display','inherit');
-                    }
-                });
+                if ( $(this).attr('data-selected') == 'true' ) {
+                    $(this).attr('data-selected','false');
+                    $('#ce_editing_container').html('').css('display','none');
+                } else {
+                    $('.ce_item_line').each(function(){$(this).attr('data-selected','false');});
+                    $(this).attr('data-selected','true');
+                    var data = {
+                        ce_data_post: true,
+                        action: 'ceReviewEdits',
+                        file: $(this).attr('data-filename')
+                    };
+                    $.ajax({
+                        type: "POST",
+                        url: '{{ base_url_absolute ~ page.route }}',
+                        data: data,
+                        success: function( response ) {
+                            $('#ce_editing_container').html(response).css('display','inherit');
+                        }
+                    });
+                }
             });
          });
     </script>

@@ -137,7 +137,7 @@ class ContentEditPlugin extends Plugin
         } else {
             $pages = $this->grav['pages'];
             $page = $pages->dispatch($post['page'] , true);
-            if ($post['language'] != 'Default' ) {
+            if ($post['language'] && $post['language'] != 'Default' ) {
                 $fn = preg_match('/^(.+)\..+?\.md$/', $page->name(), $matches);
                 if ($fn) {
                     $fileP = $page->path() . DS . $matches[1] . '.' . $post['language'] . '.md';
@@ -148,7 +148,8 @@ class ContentEditPlugin extends Plugin
             }
             switch ($post['action']) {
                 case 'ceTransferContent': // Transfer the md for the page
-                    $menuExists = $page->header()->{'menu'} != null;
+                    $hd = $page->header();
+                    $menuExists = property_exists($hd,'menu') && $hd->menu !== null;
                     $output = [ 'data' => $page->rawMarkdown(), 'menu' => $page->menu(), 'menuexists' => $menuExists ];
                     break;
                 case 'ceSaveContent': // Save markdown content
@@ -161,6 +162,9 @@ class ContentEditPlugin extends Plugin
                 case 'ceFileUpload': // Handle a file (or image) upload
                     $output = $this->saveFile($post, $page);
                     break;
+                case 'ceFileDelete': // Deleting a file or images
+                    $output = $this->deleteFile($post, $page);
+                    break;
                 default:
                     return;
             }
@@ -170,6 +174,25 @@ class ContentEditPlugin extends Plugin
         exit;
     }
 
+    public function deleteFile( $params, $page ) {
+        $fn = $params['file'];
+        if ( preg_match('/\//',$fn)) {
+            return 'NotLocal';
+        }
+        $path = $page->path() . '/' . $fn;
+        if ( ! file_exists($path) ) return 'NotExist';
+        if ( ! is_file($path) ) return 'NotFile';
+        if ( ! is_writeable( $path) ) return 'NotWriteable';
+        try {
+            unlink($path);
+        } catch (\Exception $e  ) {
+            $this->grav['dd']->dump($e);
+            return 'CantDelete';
+        }
+        $record = [ 'date' => date('D d H:i:s'), 'user' => $this->grav['user']->username , 'route' => $params['page'], 'deleted' => $fn ];
+        $this->logfile->save($this->logfile->content() . Yaml::dump( [ $record ] ) );
+        return 'Ok';
+    }
     // Nearly all from editable-simplemde
     public function saveFile($params, $page) {
         $config = $this->grav['config'];
@@ -259,7 +282,9 @@ class ContentEditPlugin extends Plugin
                 'diff' => $rendered
             ];
         }
-        if ( $page->header()->{'menu'} != null && $newMenu != $oldMenu ) { // Cannot use p->menu() to replace if no menu originally set.
+        $hd = $page->header();
+        $menuExists = property_exists($hd,'menu') && $hd->menu !== null;
+        if ( $menuExists && $newMenu != $oldMenu ) { // Cannot use p->menu() to replace if no menu originally set.
             $taint = true;
             $page->modifyHeader('menu', $newMenu );
             $record[] = [

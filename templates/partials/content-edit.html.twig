@@ -60,7 +60,7 @@
     <div id="ce_editor_container" class="simplemde" style="display: none;">
         <textarea id="ce_md_container"></textarea>
     </div>
-    <div id="ce_no_route" >{{"PLUGIN_CONTENT_EDIT.NO_ROUTE"|t}}</div>
+    <div id="ce_no_route" >{{ page.content }}</div>
     {% if prev %}<iframe id="ce_content_container" class="ce_content_styling"  style="display: none;"></iframe>{% endif %}
     <input type="file" id="ce_upload_image" accept="{{ imgTypes }}" style="display: none;" />
     <input type="file" id="ce_upload_file" accept="{{ fileTypes }}" style="display: none;" />
@@ -96,7 +96,7 @@ $().ready(function() {
                     if ( taint ) { $('#ce_save_btn').css('display','inherit'); }
                 },
                 error: function(error) {
-                    alert(error.name + ": " + error.message);
+                    alert("Error status: " + error.statusText);
                 }
             });
         });
@@ -131,7 +131,13 @@ $().ready(function() {
                 className: "fa fa-picture-o",
                 title: "{{"PLUGIN_CONTENT_EDIT.IMG_UPLOAD"|t}}"
             },
-            "|","table", "|", "undo", "redo"
+            "|","table", "|", "undo", "redo", "|",
+            {
+                name: "deleteImage",
+                action: deleteImg,
+                className: "fa fa-minus-square-o",
+                title: "{{ "PLUGIN_CONTENT_EDIT.IMG_DELETE"|t }}"
+            }
         ],
         forceSync: false,
         status: false
@@ -144,34 +150,7 @@ $().ready(function() {
         taint = true;
         $('#ce_save_btn').css('display','inherit');
     });
-    $('#ce_save_btn').click(function ( ) {
-        $('#ce_saving_msg').css('display', 'inherit');
-        $('#ce_save_inner').css('display','none');
-        var data = {
-            ce_data_post: true,
-            action: 'ceSaveContent',
-            page: route,
-            language: $('#ce_language').html(),
-            content: simplemde.value(),
-            menu: $('#ce_menu').val()
-        };
-        $.ajax({
-            type: "POST",
-            url: '{{ base_url_absolute ~ page.route }}',
-            data: data,
-            success: function(response)
-            {
-                if (response.toLowerCase() === 'ok') {
-                    $('#ce_saving_msg').css('display', 'none');
-                    $('#ce_save_inner').css('display','inherit');
-                    $('#ce_save_btn').css('display','none');
-                }
-            },
-            error: function(error) {
-                alert(error.name + ": " + error.message);
-            }
-        });
-    });
+    $('#ce_save_btn').click( saveContent );
 
     $("input[id='ce_upload_image']").change(function() {
         $(this).simpleUpload( '{{ base_url_absolute ~ page.route }}' , {
@@ -192,10 +171,11 @@ $().ready(function() {
                 else {
                     var selctn = simplemde.codemirror.getSelection();
                     simplemde.codemirror.replaceSelection('![' + selctn + '](' + result + ')');
+                    saveContent();
                 }
             },
             error: function(error) {
-                alert(error.name + ": " + error.message);
+                alert("Error status: " + error.statusText);
             }
         });
     });
@@ -213,14 +193,14 @@ $().ready(function() {
             success: function(result) {
                 if ( ! result || /ERR::/.test(result) ) {
                     alert('{{"PLUGIN_CONTENT_EDIT.WEB_ALERT"|t}}' + result.substring(5));
-                }
-                else {
+                } else {
                     var selctn = simplemde.codemirror.getSelection();
                     simplemde.codemirror.replaceSelection('[' + selctn + '](' + result + ')');
+                    saveContent();
                 }
             },
             error: function(error) {
-                alert(error.name + ": " + error.message);
+                alert("Error status: " + error.statusText);
             }
         });
     });
@@ -269,12 +249,106 @@ $().ready(function() {
                 taint = false;
             },
             error: function(error) {
-                alert(error.name + ": " + error.message);
+                alert("Error status: " + error.statusText);
                 $('.ce_lang_selector').each( function(e){
                     $(this).removeAttr('data-selected');
                 });
             }
         });
     });
+    function deleteImg() {
+        var dd = simplemde.codemirror;
+        if ( ! dd.somethingSelected() ) getImgStr(dd);
+        if ( ! dd.somethingSelected() ) {
+            alert('No link detected within selection or around cursor');
+            return;
+        }
+        var seln = dd.getSelection();
+        var filen;
+        var saveFile=false;
+        if( /\!?\[.*\]\(.+\)/.test(seln) ) {
+            filen = /\!?\[.*\]\((.+)\)/.exec(seln)[1];
+        } else { alert('nothing to delete'); return; }
+        $.ajax({
+            type: "POST",
+            url: '{{ base_url_absolute ~ page.route }}',
+            data: {
+                ce_data_post: true,
+                action: 'ceFileDelete',
+                page: route,
+                language: $('#ce_language').html(),
+                file: filen
+            },
+            success: function(response) {
+                if (/ok/i.test(response)) {
+                    dd.replaceSelection('');
+                    saveFile=true;
+                } else if (/NotWriteable/i.test(response) ) {
+                    alert('File not writeable');
+                } else if (/cantdelete/i.test(response) ) {
+                    alert('Cannot delete');
+                } else if (/notlocal/i.test(response) ) {
+                    alert('Can only delete files in same directory as .md file.');
+                } else if (/notfile/i.test(response) ) {
+                    alert('Link reference not a normal file. Link deleted.');
+                    dd.replaceSelection('');
+                    saveFile=true;
+                } else if (/notexist/i.test(response) ) {
+                    alert('Link reference does not exist. Link deleted.');
+                    dd.replaceSelection('');
+                    saveFile=true;
+                } else alert('Unknown response. No action.');
+                if ( saveFile ) saveContent();
+            },
+            error: function(error) {
+                alert(error.name + ": " + error.message);
+            }
+        });
+    }
+    function saveContent ( ) {
+        $('#ce_saving_msg').css('display', 'inherit');
+        $('#ce_save_inner').css('display','none');
+        var data = {
+            ce_data_post: true,
+            action: 'ceSaveContent',
+            page: route,
+            language: $('#ce_language').html(),
+            content: simplemde.value(),
+            menu: $('#ce_menu').val()
+        };
+        $.ajax({
+            type: "POST",
+            url: '{{ base_url_absolute ~ page.route }}',
+            data: data,
+            success: function(response)
+            {
+                if (response.toLowerCase() === 'ok') {
+                    $('#ce_saving_msg').css('display', 'none');
+                    $('#ce_save_inner').css('display','inherit');
+                    $('#ce_save_btn').css('display','none');
+                }
+            },
+            error: function(error) {
+                alert("Error status: " + error.statusText);
+                $('#ce_saving_msg').css('display', 'none');
+                $('#ce_save_inner').css('display','inherit');
+                $('#ce_save_btn').css('display','inherit');
+            }
+        });
+    }
+    function getImgStr(dd) {
+        cur = dd.getCursor();
+        curpos = cur.ch;
+        line = dd.getLine(cur.line);
+        begst = line.substr(0, curpos);
+        endst = line.substr(curpos);
+        stChr = begst.match(/\[[^)]*$/);
+        if ( stChr === null ) return;
+        stChr = stChr.index;
+        if( stChr > 0 && begst.substr(stChr-1,1) == '!') stChr--;
+        enChr = endst.indexOf(')');
+        if ( enChr == -1 ) return;
+        dd.setSelection({line: cur.line, ch: stChr}, {line: cur.line, ch: curpos+enChr+1});
+    }
 });
 </script>

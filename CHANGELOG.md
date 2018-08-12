@@ -1,3 +1,10 @@
+# v1.3.0
+## 12 August 2018
+1. [](#enhancement)
+    * Add file/image delete button on file editor
+    * Content of `content-edit.md` page is used as placeholder text before md content moved.
+    * Fix bug when menu not set in page header_navigation
+
 # v1.2.1
 ## 8 August 2018
 1. [](#bugfix)

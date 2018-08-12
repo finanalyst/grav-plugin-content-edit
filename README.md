@@ -147,9 +147,18 @@ If the Preview option is disabled, the review button will not be visible.
 
 Note that only changes that have been **Saved** will be visible in the **Review** section. Unsaved changes remain in the editor and are not transferred to the website source.
 
-It is possible to link to a file and to insert an image. The file and image are uploaded and shortcodes are inserted into the **md** code.
+It is possible to link to a file and to insert an image. The file and image are uploaded and a shortcode link is inserted into the **md** code.
 
-No provision is made to remove uploaded files that are not referenced, or for which references are deleted. This remains an Admin level task.
+A button`minus-square-o` (in the image the cursor is hovering over the button) is provided to remove an image or link.
+- To select the file to be deleted:
+    1. Select the whole of the link text to be deleted, or
+    1. Place the cursor inside the link text.  
+    Then click the image delete button.
+- The deletion can only be carried out if :
+    - the referenced file is in the same directory as the `*.md` file (the developer can place images in other directories, but these are not exposed to a non-admin frontend user),
+    - the file can be deleted by the GRAV system (the correct ownership and permissions are set)
+    - the referenced file exists.
+- If a link is found for which no local file exists, the link text is deleted from the **md** file.
 
 ### Page Collections and Different User Groups
 
